@@ -25,6 +25,7 @@ type Player = {
   id: string;
   name: string;
   team: string;
+  leagueCode: string;
   points: number;
   played: number;
   won: number;
@@ -57,6 +58,7 @@ const initialPlayers: Player[] = [
     id: "p1",
     name: "Mert Yılmaz",
     team: "RTA Yeşil",
+    leagueCode: "super",
     points: 18,
     played: 7,
     won: 6,
@@ -68,6 +70,7 @@ const initialPlayers: Player[] = [
     id: "p2",
     name: "Elif Kara",
     team: "RTA Mavi",
+    leagueCode: "super",
     points: 16,
     played: 7,
     won: 5,
@@ -79,6 +82,7 @@ const initialPlayers: Player[] = [
     id: "p3",
     name: "Can Demir",
     team: "RTA Beyaz",
+    leagueCode: "l2",
     points: 14,
     played: 6,
     won: 5,
@@ -90,6 +94,7 @@ const initialPlayers: Player[] = [
     id: "p4",
     name: "Zeynep Aydın",
     team: "RTA Kırmızı",
+    leagueCode: "l3",
     points: 11,
     played: 6,
     won: 3,
@@ -101,6 +106,7 @@ const initialPlayers: Player[] = [
     id: "p5",
     name: "Arda Şahin",
     team: "RTA Sarı",
+    leagueCode: "l4",
     points: 8,
     played: 5,
     won: 2,
@@ -173,6 +179,13 @@ const tabs: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: "admin", label: "Skor", icon: "+" },
 ];
 
+const leagueTabs = [
+  { key: "super", label: "Süper Lig" },
+  { key: "l2", label: "2. Lig" },
+  { key: "l3", label: "3. Lig" },
+  { key: "l4", label: "4. Lig" },
+];
+
 function sortPlayers(players: Player[]) {
   return [...players].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
@@ -187,6 +200,7 @@ function mapPlayer(row: PlayerRow): Player {
     id: row.id,
     name: row.name,
     team: row.team,
+    leagueCode: row.league_code,
     points: row.points,
     played: row.played,
     won: row.won,
@@ -437,17 +451,49 @@ function HomeScreen({
 }
 
 function LeagueScreen({ standings }: { standings: Player[] }) {
+  const [activeLeague, setActiveLeague] = useState("super");
+  const visibleStandings = standings.filter(
+    (player) => player.leagueCode === activeLeague,
+  );
+  const activeLeagueLabel =
+    leagueTabs.find((league) => league.key === activeLeague)?.label ??
+    "Lig Puan Durumu";
+
   return (
     <View style={styles.screen}>
-      <Section title="Lig Puan Durumu">
+      <View style={styles.segmentBar}>
+        {leagueTabs.map((league) => {
+          const selected = league.key === activeLeague;
+          return (
+            <Pressable
+              key={league.key}
+              onPress={() => setActiveLeague(league.key)}
+              style={[styles.segmentItem, selected && styles.segmentItemActive]}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  selected && styles.segmentTextActive,
+                ]}
+              >
+                {league.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Section title={`${activeLeagueLabel} Puan Durumu`}>
         <View style={styles.tableHeader}>
           <Text style={[styles.tableHeadCell, styles.rankCell]}>#</Text>
           <Text style={[styles.tableHeadCell, styles.nameCell]}>Oyuncu</Text>
           <Text style={styles.tableHeadCell}>O</Text>
           <Text style={styles.tableHeadCell}>G</Text>
+          <Text style={styles.tableHeadCell}>M</Text>
+          <Text style={styles.tableHeadCell}>Av</Text>
           <Text style={styles.tableHeadCell}>P</Text>
         </View>
-        {standings.map((player, index) => (
+        {visibleStandings.map((player, index) => (
           <View key={player.id} style={styles.tableRow}>
             <Text style={[styles.tableCell, styles.rankCell]}>{index + 1}</Text>
             <View style={styles.nameCell}>
@@ -456,13 +502,26 @@ function LeagueScreen({ standings }: { standings: Player[] }) {
             </View>
             <Text style={styles.tableCell}>{player.played}</Text>
             <Text style={styles.tableCell}>{player.won}</Text>
+            <Text style={styles.tableCell}>{player.lost}</Text>
+            <Text style={styles.tableCell}>
+              {player.setsFor - player.setsAgainst > 0 ? "+" : ""}
+              {player.setsFor - player.setsAgainst}
+            </Text>
             <Text style={styles.pointsCell}>{player.points}</Text>
           </View>
         ))}
+        {!visibleStandings.length && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Bu ligde oyuncu görünmüyor</Text>
+            <Text style={styles.emptyCopy}>
+              Supabase verisi geldiğinde tablo otomatik dolacak.
+            </Text>
+          </View>
+        )}
       </Section>
 
-      <Section title="Ranking">
-        {standings.map((player, index) => (
+      <Section title={`${activeLeagueLabel} Form Sırası`}>
+        {visibleStandings.slice(0, 8).map((player, index) => (
           <View key={`rank-${player.id}`} style={styles.rankingRow}>
             <Text style={styles.rankingNumber}>{index + 1}</Text>
             <View style={styles.rankingInfo}>
@@ -764,6 +823,35 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: "900",
   },
+  segmentBar: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    flexDirection: "row",
+    padding: 4,
+    gap: 4,
+  },
+  segmentItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 6,
+    minHeight: 42,
+    paddingHorizontal: 4,
+  },
+  segmentItemActive: {
+    backgroundColor: colors.court,
+  },
+  segmentText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  segmentTextActive: {
+    color: colors.white,
+  },
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#EAF1ED",
@@ -772,7 +860,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   tableHeadCell: {
-    width: 42,
+    width: 34,
     color: colors.muted,
     fontSize: 12,
     fontWeight: "900",
@@ -789,7 +877,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   tableCell: {
-    width: 42,
+    width: 34,
     color: colors.ink,
     fontSize: 15,
     fontWeight: "800",
@@ -813,7 +901,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   pointsCell: {
-    width: 42,
+    width: 34,
     color: colors.clay,
     fontSize: 16,
     fontWeight: "900",
@@ -841,6 +929,25 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 21,
     fontWeight: "900",
+  },
+  emptyState: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 16,
+    gap: 4,
+  },
+  emptyTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  emptyCopy: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
   },
   matchCard: {
     backgroundColor: colors.white,

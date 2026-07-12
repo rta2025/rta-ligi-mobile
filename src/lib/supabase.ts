@@ -4,6 +4,7 @@ export type PlayerRow = {
   id: string;
   name: string;
   team: string;
+  league_code: string;
   points: number;
   played: number;
   won: number;
@@ -102,6 +103,7 @@ function buildPlayerRows(players: RtaPlayer[], matches: RtaMatch[]): PlayerRow[]
       id: ensureId(player.id),
       name: player.name,
       team: leagueLabels[player.league] ?? player.league ?? "RTA",
+      league_code: player.league,
       points: 0,
       played: 0,
       won: 0,
@@ -133,15 +135,17 @@ function buildPlayerRows(players: RtaPlayer[], matches: RtaMatch[]): PlayerRow[]
 }
 
 function buildMatchRows(matches: RtaMatch[]): MatchRow[] {
-  return matches.map((match) => ({
-    id: ensureId(match.id),
-    home_id: ensureId(match.winner),
-    away_id: ensureId(match.loser),
-    court: leagueLabels[match.league] ?? match.league ?? "RTA",
-    match_date: match.match_date ?? new Date().toISOString(),
-    status: "played",
-    score: match.score ?? formatSets(parseSets(match.sets_json)),
-  }));
+  return matches
+    .slice(0, 100)
+    .map((match) => ({
+      id: ensureId(match.id),
+      home_id: ensureId(match.winner),
+      away_id: ensureId(match.loser),
+      court: leagueLabels[match.league] ?? match.league ?? "RTA",
+      match_date: match.match_date ?? new Date().toISOString(),
+      status: "played",
+      score: match.score ?? formatSets(parseSets(match.sets_json)),
+    }));
 }
 
 function formatSets(sets: unknown[]) {
