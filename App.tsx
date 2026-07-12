@@ -236,7 +236,7 @@ export default function App() {
   const [selectedMatchId, setSelectedMatchId] = useState(initialMatches[0].id);
   const [score, setScore] = useState("");
   const [dataMessage, setDataMessage] = useState(
-    hasSupabaseConfig ? "Canlı veriler yükleniyor" : "Örnek veri",
+    hasSupabaseConfig ? "Canlı veri yükleniyor" : "Örnek veri",
   );
 
   const standings = useMemo(() => sortPlayers(players), [players]);
@@ -259,10 +259,12 @@ export default function App() {
         setMatches(nextMatches);
         setTournaments(result.tournaments.map(mapTournament));
         setSelectedMatchId((current) => nextMatches[0]?.id ?? current);
-        setDataMessage("Supabase canlı");
+        setDataMessage(
+          `Canlı: ${result.players.length} oyuncu / ${result.matches.length} maç`,
+        );
       } catch {
         if (active) {
-          setDataMessage("Canlı veri alınamadı, örnek veri gösteriliyor");
+          setDataMessage("Canlı veri alınamadı");
         }
       }
     }
@@ -284,7 +286,7 @@ export default function App() {
 
     try {
       await updateMatchScore(selectedMatch.id, nextScore);
-      setDataMessage(hasSupabaseConfig ? "Skor Supabase'e kaydedildi" : "Örnek veri");
+      setDataMessage(hasSupabaseConfig ? "Skor yazma kapalı" : "Örnek veri");
     } catch {
       setDataMessage("Skor yerelde kaydedildi, Supabase yazma izni bekliyor");
     }
