@@ -18,6 +18,7 @@ export type MatchRow = {
   home_id: string;
   away_id: string;
   court: string;
+  league_code: string;
   match_date: string;
   status: "played" | "scheduled";
   score: string | null;
@@ -142,6 +143,7 @@ function buildMatchRows(matches: RtaMatch[]): MatchRow[] {
       home_id: ensureId(match.winner),
       away_id: ensureId(match.loser),
       court: leagueLabels[match.league] ?? match.league ?? "RTA",
+      league_code: match.league,
       match_date: match.match_date ?? new Date().toISOString(),
       status: "played",
       score: match.score ?? formatSets(parseSets(match.sets_json)),

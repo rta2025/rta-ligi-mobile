@@ -39,6 +39,7 @@ type Match = {
   homeId: string;
   awayId: string;
   court: string;
+  leagueCode: string;
   date: string;
   status: MatchStatus;
   score?: string;
@@ -122,6 +123,7 @@ const initialMatches: Match[] = [
     homeId: "p1",
     awayId: "p2",
     court: "Kort 1",
+    leagueCode: "super",
     date: "12 Temmuz 19:00",
     status: "scheduled",
   },
@@ -130,6 +132,7 @@ const initialMatches: Match[] = [
     homeId: "p3",
     awayId: "p4",
     court: "Kort 2",
+    leagueCode: "l2",
     date: "12 Temmuz 20:00",
     status: "scheduled",
   },
@@ -138,6 +141,7 @@ const initialMatches: Match[] = [
     homeId: "p5",
     awayId: "p1",
     court: "Kort 1",
+    leagueCode: "super",
     date: "10 Temmuz",
     status: "played",
     score: "3-6, 4-6",
@@ -216,6 +220,7 @@ function mapMatch(row: MatchRow): Match {
     homeId: row.home_id,
     awayId: row.away_id,
     court: row.court,
+    leagueCode: row.league_code,
     date: new Date(row.match_date).toLocaleString("tr-TR", {
       day: "2-digit",
       month: "long",
@@ -546,12 +551,57 @@ function MatchesScreen({
   matches: Match[];
   playerName: (id: string) => string;
 }) {
+  const [activeLeague, setActiveLeague] = useState("all");
+  const matchFilters = [{ key: "all", label: "Tümü" }, ...leagueTabs];
+  const visibleMatches =
+    activeLeague === "all"
+      ? matches
+      : matches.filter((match) => match.leagueCode === activeLeague);
+
   return (
     <View style={styles.screen}>
+      <View style={styles.segmentBar}>
+        {matchFilters.map((league) => {
+          const selected = league.key === activeLeague;
+          return (
+            <Pressable
+              key={league.key}
+              onPress={() => setActiveLeague(league.key)}
+              style={[styles.segmentItem, selected && styles.segmentItemActive]}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  selected && styles.segmentTextActive,
+                ]}
+              >
+                {league.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <Section title="Fikstür ve Sonuçlar">
-        {matches.map((match) => (
+        <View style={styles.matchSummary}>
+          <Text style={styles.matchSummaryValue}>{visibleMatches.length}</Text>
+          <Text style={styles.matchSummaryText}>
+            {activeLeague === "all"
+              ? "Son maç sonucu"
+              : `${matchFilters.find((item) => item.key === activeLeague)?.label} sonucu`}
+          </Text>
+        </View>
+        {visibleMatches.map((match) => (
           <MatchCard key={match.id} match={match} playerName={playerName} />
         ))}
+        {!visibleMatches.length && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Bu filtrede maç yok</Text>
+            <Text style={styles.emptyCopy}>
+              Sonuç girildiğinde burada otomatik görünecek.
+            </Text>
+          </View>
+        )}
       </Section>
     </View>
   );
@@ -829,11 +879,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     flexDirection: "row",
+    flexWrap: "wrap",
     padding: 4,
     gap: 4,
   },
   segmentItem: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "18%",
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 6,
@@ -929,6 +981,25 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 21,
     fontWeight: "900",
+  },
+  matchSummary: {
+    backgroundColor: "#EAF1ED",
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  matchSummaryValue: {
+    color: colors.court,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  matchSummaryText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: "800",
   },
   emptyState: {
     backgroundColor: colors.white,
